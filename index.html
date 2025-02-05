@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Mouza</title>
+    <link rel="stylesheet" href="./styles.css">
+    <!-- Leaflet Core CSS and JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+    <!-- Leaflet Draw CSS and JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    <!-- Leaflet Locate Control CSS and JS -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.78.0/L.Control.Locate.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.78.0/L.Control.Locate.min.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.min.js"></script>
+
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="controls">
+        <button id="dropdownButton">▼</button>
+        <div id="dropdownContent">
+            <input type="text" id="searchInput" placeholder="Search layers..." />
+            <div id="layerList">
+                <label><input type="checkbox" id="snippet1" > Daduana Kohna</label><br>
+                <label><input type="checkbox" id="snippet2" > Jahan Khan</label><br>
+                <label><input type="checkbox" id="snippet3" > Pipil wala</label><br>
+                <label><input type="checkbox" id="snippet4" > Thatha Kauriana</label><br>
+            </div>
+        </div>
+    </div>
+    <div class="crosshair"></div>
+    <div id="search-icon">
+        &#128269;
+    </div>
+    <!-- Single Search Input Box -->
+    <div id="search-coordinates" style="display: none;">
+        <input id="coord-search" type="text" id="coord-input" placeholder="e.g., 31.42068, 72.31527">
+        <button id="search-btn" type="button">Search</button>
+    </div>
+    <div id="coordinates">
+        Lat: <span id="lat"></span>, Lng: <span id="lng"></span>
+    </div>
+    <script src="./ms.js"></script>
+    <script src="./jk.js"></script>
+    <script src="./dk.js"></script>
+    <script src="./pw.js"></script>
+    <script src="./tk.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rectangle Drawer with GeoJSON Output</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 400px;
+            margin: 10px 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-top: 10px;
+        }
+
+        .murabba-label {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 5px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Rectangle Drawer with GeoJSON Export</h1>
+
+    <form id="rectangle-form">
+        <label>Starting Coordinates (Lat, Lng):
+            <input type="text" id="start-coordinates" value="31.44432,72.3044" required />
+        </label>
+        <br />
+        <label>Direction:
+            <select id="direction" required>
+                <option value="east">East</option>
+                <option value="west">West</option>
+                <option value="north">North</option>
+                <option value="south">South</option>
+            </select>
+        </label>
+        <br />
+        <label>Rectangle Width (feet):
+            <input type="number" id="width" value="660" step="1" required />
+        </label>
+        <br />
+        <label>Rectangle Height (feet):
+            <input type="number" id="height" value="660" step="1" required />
+        </label>
+        <br />
+        <label>Number of Rectangles:
+            <input type="number" id="num-rectangles" value="5" required />
+        </label>
+        <br />
+        <label>Starting Number:
+            <input type="number" id="start-number" value="1" required />
+        </label>
+        <br /><br />
+        <button type="submit">Draw Rectangles</button>
+    </form>
+
+    <div id="map"></div>
+    <h2>Generated GeoJSON:</h2>
+    <textarea id="geojson-output" readonly></textarea>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Earth radius in feet
+        const EARTH_RADIUS_FEET = 20925524.9;
+
+        function feetToLat(feet) {
+            return (feet / EARTH_RADIUS_FEET) * (180 / Math.PI);
+        }
+
+        function feetToLng(feet, latitude) {
+            const radiusAtLat = EARTH_RADIUS_FEET * Math.cos(latitude * (Math.PI / 180));
+            return (feet / radiusAtLat) * (180 / Math.PI);
+        }
+
+        // Initialize map
+        const map = L.map("map").setView([31.44432, 72.3044], 15);
+        googleHybrid = L.tileLayer('http://{s}.google.com/vt?lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 30,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+        googleHybrid.addTo(map)
+
+        document.getElementById("rectangle-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const startCoordinates = document
+                .getElementById("start-coordinates")
+                .value.split(",")
+                .map(Number);
+            const direction = document.getElementById("direction").value.toLowerCase();
+            const widthFeet = parseFloat(document.getElementById("width").value);
+            const heightFeet = parseFloat(document.getElementById("height").value);
+            const numRectangles = parseInt(document.getElementById("num-rectangles").value);
+            const startNumber = parseInt(document.getElementById("start-number").value);
+
+            const width = feetToLng(widthFeet, startCoordinates[0]);
+            const height = feetToLat(heightFeet);
+
+            const geoJsonData = {
+                type: "FeatureCollection",
+                features: [],
+            };
+
+            let [currentLat, currentLng] = startCoordinates;
+
+            for (let i = 0; i < numRectangles; i++) {
+                let topLeft, topRight, bottomRight, bottomLeft;
+
+                switch (direction) {
+                    case "east":
+                        topLeft = [currentLat, currentLng];
+                        topRight = [currentLat, currentLng + width];
+                        bottomRight = [currentLat - height, currentLng + width];
+                        bottomLeft = [currentLat - height, currentLng];
+                        currentLng += width;
+                        break;
+                    case "west":
+                        topLeft = [currentLat, currentLng];
+                        topRight = [currentLat, currentLng - width];
+                        bottomRight = [currentLat - height, currentLng - width];
+                        bottomLeft = [currentLat - height, currentLng];
+                        currentLng -= width;
+                        break;
+                    case "north":
+                        topLeft = [currentLat, currentLng];
+                        topRight = [currentLat + height, currentLng];
+                        bottomRight = [currentLat + height, currentLng + width];
+                        bottomLeft = [currentLat, currentLng + width];
+                        currentLat += height;
+                        break;
+                    case "south":
+                        topLeft = [currentLat, currentLng];
+                        topRight = [currentLat - height, currentLng];
+                        bottomRight = [currentLat - height, currentLng + width];
+                        bottomLeft = [currentLat, currentLng + width];
+                        currentLat -= height;
+                        break;
+                }
+
+                const polygonCoordinates = [
+                    [topLeft, topRight, bottomRight, bottomLeft, topLeft],
+                ];
+
+                // Create rectangle layer on map
+                const polygon = L.polygon(polygonCoordinates, {
+                    color: "blue",
+                    weight: 1,
+                }).addTo(map);
+
+                // Add murabba label inside the rectangle
+                const center = [(topLeft[0] + bottomRight[0]) / 2, (topLeft[1] + bottomRight[1]) / 2];
+                L.marker(center, {
+                    icon: L.divIcon({
+                        // className: 'murabba-label',
+                        html: `${startNumber + i}`
+                    })
+                }).addTo(map);
+
+                geoJsonData.features.push({
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: polygonCoordinates,
+                    },
+                    properties: {
+                        murabba: `${startNumber + i}`,
+                        area: `${(widthFeet * heightFeet).toFixed(2)} sq ft`,
+                    },
+                });
+            }
+
+            // Display GeoJSON
+            document.getElementById("geojson-output").value = JSON.stringify(geoJsonData, null, 2);
+        });
+    </script>
+</body>
+
+</html>

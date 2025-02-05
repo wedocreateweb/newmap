@@ -1,0 +1,249 @@
+body,
+html {
+    margin: 0;
+    height: 100%;
+}
+
+#map {
+    width: 100%;
+    height: 100vh;
+}
+
+/* Crosshair container */
+.crosshair {
+    position: relative;
+    width: 0;
+    height: 0;
+}
+
+/* Horizontal line */
+.crosshair::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 12px;
+    height: 2px;
+    background-color: rgb(255, 255, 255);
+    transform: translateY(-50%);
+}
+
+/* Vertical line */
+.crosshair::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 12px;
+    background-color: rgb(255, 255, 255);
+    transform: translateX(-50%);
+}
+
+
+#search-icon {
+    position: absolute;
+    top: 2%;
+    left: 97%;
+    z-index: 2000;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    font-size: 20px;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    padding: 0 0 0 0;
+}
+
+#search-coordinates {
+    position: absolute;
+    top: 2%;
+    left: 78%;
+    background-color: white;
+    padding: 5px;
+    border-radius: 3px;
+    z-index: 1000;
+}
+
+#search-coordinates button {
+    padding: 3px 3px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#coordinates {
+    position: absolute;
+    color: white;
+    top: 94%;
+    left: 50%;
+    z-index: 1000;
+    width: auto;
+    height: auto;
+    border-radius: 6px;
+    padding: 5px;
+    background-size: contain;
+    background-color: #000000;
+    background-repeat: no-repeat;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+}
+
+#lat,
+#lng {
+    color: white;
+}
+
+#controls {
+    position: absolute;
+    top: 1.5%;
+    left: 3.8%;
+    z-index: 1000;
+    border-radius: 5px;
+}
+
+#dropdownButton {
+    border-radius: 2px;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
+    padding: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#dropdownContent {
+    display: none;
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 200px;
+}
+
+#dropdownContent input[type="text"] {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+#dropdownContent label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+#dropdownContent input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+
+@media (max-width: 600px) {
+    #map {
+        width: 100%;
+        height: 90vh;
+    }
+
+    #search-icon {
+        position: absolute;
+        top: 2%;
+        left: 89%;
+        z-index: 2000;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        font-size: 20px;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        padding: 0 0 0 0;
+    }
+
+    #search-coordinates {
+        position: absolute;
+        top: 2%;
+        left: 25%;
+        background-color: white;
+        padding: 5px;
+        border-radius: 3px;
+        z-index: 1000;
+    }
+
+    #coordinates {
+        font-size: 12px;
+        color: white;
+        top: 92%;
+        left: 50%;
+        z-index: 1000;
+        width: auto;
+        height: auto;
+        border-radius: 0px;
+        background-color: #000000;
+        background-repeat: no-repeat;
+        cursor: pointer;
+    }
+
+    #lat,
+    #lng {
+        font-size: 12px;
+        color: white;
+    }
+
+    #controls {
+        position: absolute;
+        top: 1.47%;
+        left: 13.8%;
+        z-index: 1000;
+        border-radius: 5px;
+    }
+
+    #dropdownButton {
+        border-radius: 2px;
+        background-color: #ffffff;
+        color: rgb(0, 0, 0);
+        padding: 7px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    #dropdownContent {
+        display: none;
+        position: absolute;
+        background-color: white;
+        border: 1px solid #ccc;
+        padding: 10px;
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        width: 200px;
+    }
+
+    #dropdownContent input[type="text"] {
+        width: 100%;
+        padding: 5px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+
+    #dropdownContent label {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    #dropdownContent input[type="checkbox"] {
+        margin-right: 5px;
+    }
+
+}
+
+
+.number-label {
+    color: white;
+}

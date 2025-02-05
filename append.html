@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map with Editable JSON and Line Update</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+
+        .input-section {
+            margin-bottom: 10px;
+        }
+
+        #live-coordinates {
+            margin-top: 10px;
+        }
+
+        #crosshair-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background-color: white;
+            padding: 5px;
+            cursor: pointer;
+            border: 1px solid black;
+        }
+
+        #json-data {
+            margin-top: 20px;
+            width: 100%;
+            height: 150px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Map with Editable JSON and Line Update</h1>
+
+    <div class="input-section">
+        <label for="coords">Start Coordinates (lat, lng):</label>
+        <input type="text" id="coords" placeholder="Enter coordinates as lat,lng">
+        <br>
+
+
+        <label for="direction">Direction:</label>
+        <select id="direction">
+            <option value="north">North</option>
+            <option value="south">South</option>
+            <option value="east">East</option>
+            <option value="west">West</option>
+        </select>
+        <br>
+
+        <label for="distance">Distance (feet):</label>
+        <input type="number" id="distance" placeholder="Enter distance in feet">
+        <br>
+
+        <button onclick="drawLine()">Draw Line</button>
+        <button onclick="updateLines()">Update Lines</button>
+    </div>
+
+    <div id="map"></div>
+    <button id="crosshair-btn" onclick="getCenterCoordinates()">Get Center Coordinates</button>
+    <button onclick="downloadJSON()">Download JSON File</button>
+
+    <div id="live-coordinates">Coordinates: <span id="mouse-coordinates"></span></div>
+    <div id="center-coordinates">Center Coordinates: <span id="center-coord"></span></div>
+    <div id="end-coordinates">Line End Coordinates: <span id="end-coord"></span></div>
+
+    <!-- Editable textarea to show and modify the JSON data -->
+    <textarea id="json-data">JSON data will appear here...</textarea>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+
+        var map = L.map('map').setView([31.4187222, 72.2825785], 13);
+
+        googleHybrid = L.tileLayer('http://{s}.google.com/vt?lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+        googleHybrid.addTo(map)
+
+        // Store references to layers
+        var currentLineLayer = null;
+        var lineLayers = [];  // Array to store multiple line layers
+
+        // Initialize line data array to store drawn lines
+        var lineData = [];
+
+        // Update live coordinates on mouse move
+        map.on('mousemove', function (e) {
+            document.getElementById('mouse-coordinates').textContent = e.latlng.lat.toFixed(5) + ", " + e.latlng.lng.toFixed(5);
+        });
+
+        // Get the center coordinates when crosshair button is clicked
+        function getCenterCoordinates() {
+            var center = map.getCenter();
+            document.getElementById('center-coord').textContent = center.lat.toFixed(5) + ", " + center.lng.toFixed(5);
+        }
+
+        // Function to draw the line based on input values and append to JSON
+        function drawLine() {
+            // Get the input value for the coordinates
+            var coords = document.getElementById("coords").value.trim();
+
+            // Split the coordinates by comma
+            var coordsArray = coords.split(",");
+
+            if (coordsArray.length !== 2) {
+                alert("Please provide coordinates in 'lat,lng' format");
+                return;
+            }
+
+            var lat = parseFloat(coordsArray[0]);
+            var lng = parseFloat(coordsArray[1]);
+
+            var direction = document.getElementById("direction").value;
+            var distanceInFeet = parseFloat(document.getElementById("distance").value);
+
+            if (isNaN(lat) || isNaN(lng) || isNaN(distanceInFeet)) {
+                alert("Please provide valid inputs");
+                return;
+            }
+
+            // Convert feet to meters (1 foot = 0.3048 meters)
+            var distanceInMeters = distanceInFeet * 0.3048;
+
+            // Calculate the new coordinates based on direction
+            var newLat = lat;
+            var newLng = lng;
+
+            if (direction === "north") {
+                newLat += distanceInMeters / 111320;  // Latitude changes per meter
+            } else if (direction === "south") {
+                newLat -= distanceInMeters / 111320;
+            } else if (direction === "east") {
+                newLng += distanceInMeters / (111320 * Math.cos(lat * Math.PI / 180));  // Longitude changes based on latitude
+            } else if (direction === "west") {
+                newLng -= distanceInMeters / (111320 * Math.cos(lat * Math.PI / 180));
+            }
+
+            // Draw the new line on the map
+            var latlngs = [
+                [lat, lng],
+                [newLat, newLng]
+            ];
+
+            var newLineLayer = L.polyline(latlngs, { color: 'red' }).addTo(map);
+            lineLayers.push(newLineLayer);  // Store the new line layer
+
+            map.setView([lat, lng], 13);  // Center the map on the starting point
+
+            // Display the end coordinates
+            document.getElementById('end-coord').textContent = newLat.toFixed(5) + ", " + newLng.toFixed(5);
+
+            // Append line data to the JSON array
+            var lineEntry = {
+                start: { lat: lat, lng: lng },
+                end: { lat: newLat, lng: newLng },
+                direction: direction,
+                distance: distanceInFeet
+            };
+            lineData.push(lineEntry);
+
+            // Update the editable textarea with the JSON data
+            document.getElementById('json-data').value = JSON.stringify(lineData, null, 2);
+        }
+
+
+        // Function to clear the existing lines on the map
+        function clearLines() {
+            for (var i = 0; i < lineLayers.length; i++) {
+                map.removeLayer(lineLayers[i]);
+            }
+            lineLayers = [];  // Clear the array of layers
+        }
+
+        // Function to update the lines based on the JSON in the textarea
+        function updateLines() {
+            var jsonData = document.getElementById('json-data').value;
+
+            try {
+                // Parse the JSON data from the textarea
+                var parsedData = JSON.parse(jsonData);
+
+                // Clear existing lines on the map
+                clearLines();
+
+                // Iterate through the parsed data and draw the lines on the map
+                parsedData.forEach(function (line) {
+                    var latlngs = [
+                        [line.start.lat, line.start.lng],
+                        [line.end.lat, line.end.lng]
+                    ];
+                    var newLineLayer = L.polyline(latlngs, { color: 'blue' }).addTo(map);
+                    lineLayers.push(newLineLayer);  // Store the new line layer
+                });
+
+                // Update the lineData array to match the new parsed data
+                lineData = parsedData;
+
+            } catch (e) {
+                alert("Invalid JSON format. Please check your edits.");
+            }
+        }
+
+        // Function to download JSON file, using the content of the editable textarea
+        function downloadJSON() {
+            var jsonData = document.getElementById('json-data').value;
+
+            try {
+                JSON.parse(jsonData);  // Validate JSON
+
+                var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonData);
+                var downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "lines_data.json");
+                document.body.appendChild(downloadAnchorNode);  // Required for Firefox
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            } catch (e) {
+                alert("Invalid JSON format. Please check your edits.");
+            }
+        }
+    </script>
+
+</body>
+
+</html>
