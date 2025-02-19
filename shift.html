@@ -4,148 +4,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift GeoJSON Coordinates</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <title>GeoJSON Shifter</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
         #map {
-            height: 500px;
-            width: 100%;
-            margin-top: 10px;
+            height: 400px;
+            margin-top: 20px;
         }
 
         textarea {
             width: 100%;
-            height: 150px;
+            height: 100px;
         }
 
-        label {
-            font-weight: bold;
+        .input-group {
+            margin-bottom: 10px;
         }
     </style>
 </head>
 
 <body>
+    <h1>GeoJSON Shifter</h1>
+    <div class="input-group">
+        <label for="geojson-input">GeoJSON Input:</label>
+        <textarea id="geojson-input" placeholder="Paste your GeoJSON here"></textarea>
+    </div>
+    <div class="input-group">
+        <label for="direction">Direction:</label>
+        <select id="direction">
+            <option value="north">North</option>
+            <option value="south">South</option>
+            <option value="east">East</option>
+            <option value="west">West</option>
+        </select>
+    </div>
+    <div class="input-group">
+        <label for="distance">Distance (feet):</label>
+        <input type="number" id="distance" placeholder="Enter distance in feet">
+    </div>
+    <button onclick="shiftGeoJSON()">Shift</button>
 
-    <h3>Shift GeoJSON Coordinates</h3>
+    <h2>Updated GeoJSON:</h2>
+    <pre id="updated-geojson"></pre>
 
-    <label for="geojsonInput">Enter GeoJSON Data:</label><br>
-    <textarea id="geojsonInput">
-{
-    "type": "FeatureCollection",
-    "features": [
-        {
-            "type": "Feature",
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [[[74.006, 40.7128], [74.007, 40.7138], [74.008, 40.7128], [74.006, 40.7128]]]
-            },
-            "properties": {
-                "name": "Sample Area"
-            }
-        }
-    ]
-}
-</textarea>
-
-    <br>
-
-    <label for="direction">Direction:</label>
-    <select id="direction">
-        <option value="north">North</option>
-        <option value="south">South</option>
-        <option value="east">East</option>
-        <option value="west">West</option>
-    </select>
-
-    <label for="distance">Distance (in feet):</label>
-    <input type="number" id="distance" placeholder="Enter distance in feet" required>
-
-    <button onclick="shiftGeoJSON()">Shift Coordinates</button>
-
-    <h4>Shifted GeoJSON Output:</h4>
-    <textarea id="geojsonOutput" readonly></textarea>
-
+    <h2>Map View:</h2>
     <div id="map"></div>
 
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Initialize the map
-        const map = L.map('map').setView([40.7128, -74.006], 15);
+        // Earth's radius in feet
+        const EARTH_RADIUS_FEET = 20902231;
 
-        // Add a tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Function to convert feet to degrees (approximation)
-        function feetToLatLngShift(feet) {
-            const feetPerDegreeLat = 364000; // Approximate feet per degree latitude
-            const feetPerDegreeLng = 288200; // Approximate feet per degree longitude at mid-latitude
-            return {
-                lat: feet / feetPerDegreeLat,
-                lng: feet / feetPerDegreeLng
-            };
-        }
-
-        // Function to shift coordinates
-        function shiftCoordinates(coords, shiftLat, shiftLng) {
-            return coords.map(coord => [coord[0] + shiftLat, coord[1] + shiftLng]);
-        }
-
-        function shiftGeoJSON() {
-            const direction = document.getElementById('direction').value;
-            const distanceFeet = parseFloat(document.getElementById('distance').value);
-            const geoJsonText = document.getElementById('geojsonInput').value;
-
-            if (isNaN(distanceFeet)) {
-                alert("Please enter a valid distance.");
-                return;
-            }
-
-            let geoJsonData;
-            try {
-                geoJsonData = JSON.parse(geoJsonText);
-            } catch (e) {
-                alert("Invalid GeoJSON format.");
-                return;
-            }
-
-            const distance = feetToLatLngShift(distanceFeet);
-            let shiftLat = 0, shiftLng = 0;
+        // Function to calculate latitude/longitude shift
+        function calculateShift(distanceFeet, direction, latitude) {
+            const latitudeRad = (Math.PI / 180) * latitude;
+            const circumference = 2 * Math.PI * EARTH_RADIUS_FEET * Math.cos(latitudeRad);
+            const shiftDegrees = distanceFeet / (circumference / 360);
 
             switch (direction) {
                 case 'north':
-                    shiftLat = distance.lat;
-                    break;
+                    return { lat: shiftDegrees, lng: 0 };
                 case 'south':
-                    shiftLat = -distance.lat;
-                    break;
+                    return { lat: -shiftDegrees, lng: 0 };
                 case 'east':
-                    shiftLng = distance.lng;
-                    break;
+                    return { lat: 0, lng: shiftDegrees };
                 case 'west':
-                    shiftLng = -distance.lng;
-                    break;
+                    return { lat: 0, lng: -shiftDegrees };
+                default:
+                    return { lat: 0, lng: 0 };
+            }
+        }
+
+        // Function to shift GeoJSON coordinates
+        function shiftGeoJSON() {
+            const geojsonInput = document.getElementById('geojson-input').value;
+            const direction = document.getElementById('direction').value;
+            const distanceFeet = parseFloat(document.getElementById('distance').value);
+
+            if (!geojsonInput || !direction || isNaN(distanceFeet)) {
+                alert('Please provide valid input.');
+                return;
             }
 
-            geoJsonData.features.forEach(feature => {
-                feature.geometry.coordinates = feature.geometry.coordinates.map(polygon =>
-                    shiftCoordinates(polygon, shiftLat, shiftLng)
-                );
+            let geojson;
+            try {
+                geojson = JSON.parse(geojsonInput);
+            } catch (e) {
+                alert('Invalid GeoJSON input.');
+                return;
+            }
+
+            // Calculate average latitude for shift calculation
+            const allCoordinates = [];
+            geojson.features.forEach(feature => {
+                feature.geometry.coordinates.forEach(polygon => {
+                    polygon.forEach(coord => {
+                        allCoordinates.push(coord);
+                    });
+                });
+            });
+            const avgLatitude = allCoordinates.reduce((sum, coord) => sum + coord[0], 0) / allCoordinates.length;
+
+            // Calculate shift
+            const shift = calculateShift(distanceFeet, direction, avgLatitude);
+
+            // Shift coordinates
+            geojson.features.forEach(feature => {
+                feature.geometry.coordinates.forEach(polygon => {
+                    polygon.forEach(coord => {
+                        coord[0] += shift.lat; // Latitude shift
+                        coord[1] += shift.lng; // Longitude shift
+                    });
+                });
             });
 
-            // Clear and re-render the map
-            map.eachLayer(layer => {
-                if (layer instanceof L.Polygon || layer instanceof L.GeoJSON) map.removeLayer(layer);
-            });
+            // Display updated GeoJSON
+            document.getElementById('updated-geojson').textContent = JSON.stringify(geojson, null, 2);
 
-            L.geoJSON(geoJsonData).addTo(map);
+            // Update map view
+            updateMap(geojson);
+        }
 
-            // Output the shifted GeoJSON in the output textarea
-            document.getElementById('geojsonOutput').value = JSON.stringify(geoJsonData, null, 2);
+        // Function to update the map
+        let map;
+        let geojsonLayer;
+
+        function updateMap(geojson) {
+            if (map) {
+                map.remove();
+            }
+
+            map = L.map('map').setView([31.4486, 72.2547], 13); // Default center
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            if (geojsonLayer) {
+                geojsonLayer.remove();
+            }
+
+            geojsonLayer = L.geoJSON(geojson).addTo(map);
+            map.fitBounds(geojsonLayer.getBounds());
         }
     </script>
-
 </body>
 
 </html>
